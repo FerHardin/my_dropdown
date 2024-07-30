@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apple-inspired Dropdown</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f5f5f7;
+            color: #1d1d1f;
+        }
+        .dropdown-container {
+            position: relative;
+            width: 300px;
+        }
+        .dropdown-toggle {
+            width: 100%;
+            padding: 12px 16px;
+            background-color: #ffffff;
+            border: 1px solid #d2d2d7;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        .dropdown-toggle:hover {
+            background-color: #f5f5f7;
+        }
+        .dropdown-menu {
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 0;
+            width: 100%;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            display: none;
+            z-index: 1000;
+            overflow: hidden;
+        }
+        .dropdown-menu.active {
+            display: block;
+        }
+        .dropdown-search-container {
+            padding: 12px;
+            border-bottom: 1px solid #d2d2d7;
+        }
+        .dropdown-search {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #d2d2d7;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        .dropdown-options {
+            max-height: 250px;
+            overflow-y: auto;
+        }
+        .dropdown-option {
+            padding: 12px 16px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        .dropdown-option:hover {
+            background-color: #f5f5f7;
+        }
+        .dropdown-option.selected {
+            background-color: #0071e3;
+            color: #ffffff;
+        }
+        .selected-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        .selected-option {
+            background-color: #e8e8ed;
+            color: #1d1d1f;
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+        }
+        .remove-option {
+            margin-left: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            color: #86868b;
+        }
+        .remove-option:hover {
+            color: #1d1d1f;
+        }
+    </style>
+</head>
+<body>
+    <div class="dropdown-container" id="myDropdown">
+        <button class="dropdown-toggle">Select options</button>
+        <div class="selected-options"></div>
+        <div class="dropdown-menu">
+            <div class="dropdown-search-container">
+                <input type="text" class="dropdown-search" placeholder="Search...">
+            </div>
+            <div class="dropdown-options"></div>
+        </div>
+    </div>
+
+    <script>
+        class ModernDropdown {
+            constructor(element, options) {
+                this.element = element;
+                this.options = options;
+                this.toggle = this.element.querySelector('.dropdown-toggle');
+                this.menu = this.element.querySelector('.dropdown-menu');
+                this.search = this.element.querySelector('.dropdown-search');
+                this.optionsContainer = this.element.querySelector('.dropdown-options');
+                this.selectedOptionsContainer = this.element.querySelector('.selected-options');
+                this.isMultiple = options.multiple || false;
+                this.isActive = false;
+                this.selectedOptions = [];
+
+                this.init();
+            }
+
+            init() {
+                this.renderOptions();
+                this.addEventListeners();
+            }
+
+            renderOptions() {
+                this.optionsContainer.innerHTML = '';
+                this.options.options.forEach(option => {
+                    const optionElement = document.createElement('div');
+                    optionElement.classList.add('dropdown-option');
+                    optionElement.textContent = option.label;
+                    optionElement.dataset.value = option.value;
+                    this.optionsContainer.appendChild(optionElement);
+                });
+            }
+
+            addEventListeners() {
+                this.toggle.addEventListener('click', () => this.toggleDropdown());
+                this.search.addEventListener('input', () => this.filterOptions());
+                this.optionsContainer.addEventListener('click', (e) => this.selectOption(e));
+                document.addEventListener('click', (e) => this.handleOutsideClick(e));
+                this.selectedOptionsContainer.addEventListener('click', (e) => this.removeSelectedOption(e));
+            }
+
+            toggleDropdown() {
+                this.isActive = !this.isActive;
+                this.menu.classList.toggle('active', this.isActive);
+            }
+
+            filterOptions() {
+                const searchTerm = this.search.value.toLowerCase();
+                const options = this.optionsContainer.querySelectorAll('.dropdown-option');
+                options.forEach(option => {
+                    const text = option.textContent.toLowerCase();
+                    option.style.display = text.includes(searchTerm) ? 'block' : 'none';
+                });
+            }
+
+            selectOption(e) {
+                if (e.target.classList.contains('dropdown-option')) {
+                    const value = e.target.dataset.value;
+                    if (this.isMultiple) {
+                        const index = this.selectedOptions.indexOf(value);
+                        if (index === -1) {
+                            this.selectedOptions.push(value);
+                            e.target.classList.add('selected');
+                        } else {
+                            this.selectedOptions.splice(index, 1);
+                            e.target.classList.remove('selected');
+                        }
+                    } else {
+                        this.selectedOptions = [value];
+                        this.optionsContainer.querySelectorAll('.dropdown-option').forEach(option => {
+                            option.classList.toggle('selected', option.dataset.value === value);
+                        });
+                        this.toggleDropdown();
+                    }
+                    this.updateSelectedOptions();
+                }
+            }
+
+            updateSelectedOptions() {
+                this.selectedOptionsContainer.innerHTML = '';
+                this.selectedOptions.forEach(value => {
+                    const option = this.options.options.find(opt => opt.value === value);
+                    if (option) {
+                        const selectedOption = document.createElement('span');
+                        selectedOption.classList.add('selected-option');
+                        selectedOption.textContent = option.label;
+                        selectedOption.dataset.value = option.value;
+                        const removeButton = document.createElement('span');
+                        removeButton.classList.add('remove-option');
+                        removeButton.textContent = '×';
+                        selectedOption.appendChild(removeButton);
+                        this.selectedOptionsContainer.appendChild(selectedOption);
+                    }
+                });
+            }
+
+            removeSelectedOption(e) {
+                if (e.target.classList.contains('remove-option')) {
+                    const value = e.target.parentElement.dataset.value;
+                    const index = this.selectedOptions.indexOf(value);
+                    if (index !== -1) {
+                        this.selectedOptions.splice(index, 1);
+                        this.updateSelectedOptions();
+                        const option = this.optionsContainer.querySelector(`[data-value="${value}"]`);
+                        if (option) {
+                            option.classList.remove('selected');
+                        }
+                    }
+                }
+            }
+
+            handleOutsideClick(e) {
+                if (!this.element.contains(e.target) && this.isActive) {
+                    this.toggleDropdown();
+                }
+            }
+        }
+
+        // Initialize the dropdown
+        const myDropdown = new ModernDropdown(document.getElementById('myDropdown'), {
+            multiple: true,
+            options: [
+                { value: '1', label: 'Option 1' },
+                { value: '2', label: 'Option 2' },
+                { value: '3', label: 'Option 3' },
+                { value: '4', label: 'Option 4' },
+                { value: '5', label: 'Option 5' },
+                { value: '6', label: 'Option 6' },
+                { value: '7', label: 'Option 7' },
+                { value: '8', label: 'Option 8' },
+                { value: '9', label: 'Option 9' },
+                { value: '10', label: 'Option 10' },
+            ]
+        });
+    </script>
+</body>
+</html>
